@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UW-Madison WisCard - Apple Wallet Style</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #C50508 0%, #8B0000 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #C50508;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #C50508;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: #A30406;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(197, 5, 8, 0.4);
+        }
+
+        /* Apple Wallet Pass Style */
+        .wallet-pass {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .pass-header {
+            background: #C50508;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .pass-header h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .pass-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .pass-body {
+            padding: 30px;
+            background: white;
+        }
+
+        .pass-field {
+            margin-bottom: 20px;
+        }
+
+        .pass-field label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .pass-field .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .barcode-section {
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .barcode-section svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .pass-footer {
+            padding: 20px;
+            background: white;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .download-btn {
+            background: #2196F3;
+        }
+
+        .download-btn:hover {
+            background: #1976D2;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .instructions h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #1976D2;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 UW-Madison WisCard for Apple Wallet</h1>
+
+        <div class="card">
+            <form id="wisCardForm">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" placeholder="John Doe" required>
+
+                <label for="studentId">Student ID (9 digits)</label>
+                <input type="text" id="studentId" placeholder="123456789" pattern="[0-9]{9}" maxlength="9" required>
+
+                <label for="issueDate">Issue Date</label>
+                <input type="date" id="issueDate" required>
+
+                <label for="expiryDate">Expiry Date</label>
+                <input type="date" id="expiryDate" required>
+
+                <button type="submit">Generate Wallet Pass</button>
+            </form>
+        </div>
+
+        <!-- Apple Wallet Style Pass -->
+        <div class="wallet-pass" id="walletPass">
+            <div class="pass-header">
+                <h2>🎓 WISCARD</h2>
+                <p>University of Wisconsin-Madison</p>
+            </div>
+
+            <div class="pass-body">
+                <div class="pass-field">
+                    <label>NAME</label>
+                    <div class="value" id="passName">-</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="pass-field">
+                        <label>STUDENT ID</label>
+                        <div class="value" id="passStudentId">-</div>
+                    </div>
+                    <div class="pass-field">
+                        <label>EXPIRES</label>
+                        <div class="value" id="passExpiry">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="barcode-section">
+                <svg id="passBarcode"></svg>
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">Scan at campus facilities</p>
+            </div>
+
+            <div class="pass-footer">
+                <p>Valid through <span id="passExpiryFull">-</span></p>
+                <p style="margin-top: 5px; font-size: 10px; opacity: 0.7;">This is your official UW-Madison WisCard</p>
+            </div>
+        </div>
+
+        <div class="action-buttons" id="actionButtons">
+            <button onclick="downloadPassImage()" class="download-btn">📥 Save to Photos</button>
+            <button onclick="sharePass()">📤 Share Pass</button>
+        </div>
+
+        <div class="instructions" id="instructions" style="display: none;">
+            <h3>📱 How to Add to iPhone</h3>
+            <ol>
+                <li><strong>Click "Save to Photos"</strong> to download the pass image</li>
+                <li><strong>Open Photos app</strong> on your iPhone</li>
+                <li><strong>Find the downloaded pass</strong> and add it to your favorites</li>
+                <li><strong>Quick access:</strong> Add to Lock Screen widget for instant access</li>
+                <li><strong>Scan at campus:</strong> Open the photo when you need to scan</li>
+            </ol>
+        </div>
+
+        <div class="alert" id="appleWalletNote" style="display: none;">
+            <strong>⚠️ Note about Apple Wallet:</strong> True Apple Wallet integration requires an Apple Developer account ($99/year)
+            and code signing certificates. This generates a visual pass that you can save to your phone's Photos app and use
+            just like a real Wallet pass by showing it when needed.
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('wisCardForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const studentId = document.getElementById('studentId').value;
+            const issueDate = document.getElementById('issueDate').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+
+            // Validate student ID
+            if (!/^[0-9]{9}$/.test(studentId)) {
+                alert('Student ID must be exactly 9 digits');
+                return;
+            }
+
+            // Generate barcode
+            try {
+                JsBarcode("#passBarcode", studentId, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 80,
+                    displayValue: true,
+                    fontSize: 16,
+                    margin: 10,
+                    background: "#f5f5f5",
+                    lineColor: "#000000"
+                });
+
+                // Populate pass data
+                document.getElementById('passName').textContent = name;
+                document.getElementById('passStudentId').textContent = studentId;
+
+                const expiryDateObj = new Date(expiryDate);
+                document.getElementById('passExpiry').textContent = expiryDateObj.toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    year: '2-digit'
+                });
+                document.getElementById('passExpiryFull').textContent = expiryDateObj.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                // Show pass and buttons
+                document.getElementById('walletPass').style.display = 'block';
+                document.getElementById('actionButtons').style.display = 'grid';
+                document.getElementById('instructions').style.display = 'block';
+                document.getElementById('appleWalletNote').style.display = 'block';
+
+                // Scroll to pass
+                document.getElementById('walletPass').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                alert('Error generating pass: ' + error.message);
+                console.error('Pass generation error:', error);
+            }
+        });
+
+        async function downloadPassImage() {
+            const passElement = document.getElementById('walletPass');
+
+            try {
+                const canvas = await html2canvas(passElement, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const studentId = document.getElementById('studentId').value;
+                    a.download = `UW_WisCard_${studentId}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    alert('✅ WisCard pass saved! Check your Downloads folder, then transfer to your iPhone.');
+                });
+            } catch (error) {
+                alert('Error creating image: ' + error.message);
+                console.error('Screenshot error:', error);
+            }
+        }
+
+        async function sharePass() {
+            const passElement = document.getElementById('walletPass');
+
+            try {
+                const canvas = await html2canvas(passElement, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+
+                canvas.toBlob(async function(blob) {
+                    if (navigator.share && navigator.canShare({ files: [new File([blob], 'wiscard.png', { type: 'image/png' })] })) {
+                        const file = new File([blob], 'UW_WisCard.png', { type: 'image/png' });
+                        await navigator.share({
+                            files: [file],
+                            title: 'UW-Madison WisCard',
+                            text: 'My UW-Madison WisCard'
+                        });
+                    } else {
+                        alert('Sharing not supported on this device. Use "Save to Photos" instead.');
+                    }
+                });
+            } catch (error) {
+                alert('Error sharing: ' + error.message);
+                console.error('Share error:', error);
+            }
+        }
+
+        // Set default dates
+        window.addEventListener('load', () => {
+            const today = new Date();
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+            document.getElementById('issueDate').valueAsDate = today;
+            document.getElementById('expiryDate').valueAsDate = nextYear;
+        });
+    </script>
+</body>
+</html>

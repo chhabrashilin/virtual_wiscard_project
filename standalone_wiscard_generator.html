@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UW-Madison WisCard Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #C50508 0%, #8B0000 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #C50508;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: #C50508;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: #A30406;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(197, 5, 8, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #preview {
+            text-align: center;
+            padding: 30px;
+        }
+
+        #preview h2 {
+            color: #C50508;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        #qrcode {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        #qrcode img {
+            border-radius: 4px;
+        }
+
+        .binary-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border-left: 4px solid #C50508;
+        }
+
+        .binary-display strong {
+            color: #C50508;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            font-size: 14px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #1976D2;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 UW-Madison WisCard Generator</h1>
+
+        <div class="card">
+            <form id="wisCardForm">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" placeholder="John Doe" required>
+
+                <label for="studentId">Student ID</label>
+                <input type="text" id="studentId" placeholder="1234567" pattern="[0-9]+" required>
+
+                <label for="issueDate">Issue Date</label>
+                <input type="date" id="issueDate" required>
+
+                <label for="expiryDate">Expiry Date</label>
+                <input type="date" id="expiryDate" required>
+
+                <button type="submit" id="submitBtn">
+                    Confirm & Generate QR Code
+                </button>
+            </form>
+
+            <div id="status" class="status"></div>
+        </div>
+
+        <div class="card" id="preview" style="display: none;">
+            <h2>📱 Scan with iPhone Camera</h2>
+            <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0;"></div>
+            <div class="binary-display">
+                <p style="margin-bottom: 8px; color: #666;">Student ID (Binary):</p>
+                <strong id="binaryDisplay">-</strong>
+            </div>
+            <div class="binary-display" style="margin-top: 10px; background: #fff3cd; border-left-color: #ffc107;">
+                <p style="margin-bottom: 8px; color: #856404; font-weight: 600;">Encoded Data:</p>
+                <strong id="qrcodeData" style="color: #856404; font-size: 12px;">-</strong>
+            </div>
+            <div class="info-box">
+                💡 Point your iPhone camera at this QR code to scan. It contains your WisCard data in JSON format.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - UPDATE THESE AFTER DEPLOYMENT
+        const BACKEND_URL = 'http://localhost:8000';
+        const CONTRACT_ADDRESS = '0x...'; // Set after deploying smart contract
+
+        // Convert Student ID to Binary
+        function studentIdToBinary(studentId) {
+            return parseInt(studentId).toString(2);
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        // Auto-generate QR code preview when form data changes
+        function generateQRPreview() {
+            const studentId = document.getElementById('studentId').value;
+            const name = document.getElementById('name').value;
+            const issueDate = document.getElementById('issueDate').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+
+            if (studentId && /^[0-9]+$/.test(studentId) && name && issueDate && expiryDate) {
+                const binary = studentIdToBinary(studentId);
+                document.getElementById('binaryDisplay').textContent = binary;
+                document.getElementById('preview').style.display = 'block';
+
+                // Create data object for QR code
+                const qrData = {
+                    type: "UW_WISCARD",
+                    name: name,
+                    studentId: studentId,
+                    binary: binary,
+                    issueDate: issueDate,
+                    expiryDate: expiryDate,
+                    timestamp: new Date().toISOString()
+                };
+
+                const qrString = JSON.stringify(qrData);
+                document.getElementById('qrcodeData').textContent = qrString;
+
+                // Clear previous QR code
+                document.getElementById('qrcode').innerHTML = '';
+
+                // Generate new QR code
+                try {
+                    new QRCode(document.getElementById("qrcode"), {
+                        text: qrString,
+                        width: 256,
+                        height: 256,
+                        colorDark: "#C50508",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (error) {
+                    console.error('QR code generation error:', error);
+                }
+            } else {
+                document.getElementById('preview').style.display = 'none';
+            }
+        }
+
+        // Add event listeners to all form fields
+        document.getElementById('studentId').addEventListener('input', generateQRPreview);
+        document.getElementById('name').addEventListener('input', generateQRPreview);
+        document.getElementById('issueDate').addEventListener('change', generateQRPreview);
+        document.getElementById('expiryDate').addEventListener('change', generateQRPreview);
+
+        // Form submission handler
+        document.getElementById('wisCardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Generating...';
+
+            const name = document.getElementById('name').value;
+            const studentId = document.getElementById('studentId').value;
+            const issueDate = document.getElementById('issueDate').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+            const binary = studentIdToBinary(studentId);
+
+            try {
+                // Regenerate QR code to ensure it's up to date
+                generateQRPreview();
+
+                // Step 1: Show success
+                showStatus('✅ QR Code generated! Point your iPhone camera at it to scan.', 'success');
+
+                // Step 2: Scroll to QR code
+                document.getElementById('preview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Confirm & Generate QR Code';
+            }
+        });
+
+        // Set default dates
+        window.addEventListener('load', () => {
+            const today = new Date();
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+            document.getElementById('issueDate').valueAsDate = today;
+            document.getElementById('expiryDate').valueAsDate = nextYear;
+        });
+    </script>
+</body>
+</html>
