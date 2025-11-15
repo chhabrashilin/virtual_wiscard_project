@@ -6,6 +6,9 @@ import { getToken, getCurrentUser } from '@/lib/api'
 import VirtualCard from '@/components/VirtualCard'
 import QRCodeDisplay from '@/components/QRCodeDisplay'
 import ServiceCard from '@/components/ServiceCard'
+import TransactionHistory from '@/components/TransactionHistory'
+import BlockchainCard from '@/components/BlockchainCard'
+import { Toaster } from 'react-hot-toast'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -49,12 +52,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
+
       {/* Header */}
       <header className="bg-uw-red text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Virtual Wiscard</h1>
+              <h1 className="text-2xl font-bold">Virtual Wiscard 2.0</h1>
               <p className="text-sm opacity-90">Welcome, {user?.full_name}</p>
             </div>
             <div className="flex items-center space-x-4">
@@ -79,16 +84,16 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Virtual Card & QR Code */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Virtual Card */}
-          <div>
-            <VirtualCard />
-          </div>
+          <VirtualCard />
+          <QRCodeDisplay />
+        </div>
 
-          {/* QR Code */}
-          <div>
-            <QRCodeDisplay />
-          </div>
+        {/* Blockchain & Apple Wallet */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <BlockchainCard />
+          <TransactionHistory />
         </div>
 
         {/* Services */}

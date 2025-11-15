@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { generateQRCode } from '@/lib/api'
 
@@ -9,6 +9,35 @@ export default function QRCodeDisplay() {
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [timeRemaining, setTimeRemaining] = useState<number>(0)
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (!expiresAt) return
+
+    const calculateTimeRemaining = () => {
+      const now = new Date().getTime()
+      const expiry = new Date(expiresAt).getTime()
+      const remaining = Math.max(0, Math.floor((expiry - now) / 1000))
+      return remaining
+    }
+
+    setTimeRemaining(calculateTimeRemaining())
+
+    const interval = setInterval(() => {
+      const remaining = calculateTimeRemaining()
+      setTimeRemaining(remaining)
+
+      if (remaining === 0) {
+        clearInterval(interval)
+        // Auto-clear QR code when expired
+        setQrData(null)
+        setExpiresAt(null)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [expiresAt])
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -22,6 +51,16 @@ export default function QRCodeDisplay() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const getProgressPercentage = (): number => {
+    return (timeRemaining / 300) * 100 // 300 seconds = 5 minutes
   }
 
   const formatExpiry = (dateString: string) => {
@@ -57,11 +96,27 @@ export default function QRCodeDisplay() {
               <QRCodeSVG value={qrData} size={200} />
             </div>
           </div>
+
+          {/* Countdown Timer */}
+          <div className="mb-4">
+            <div className="text-2xl font-bold text-uw-red mb-2">
+              {formatTime(timeRemaining)}
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+              <div
+                className={`h-2.5 rounded-full transition-all duration-1000 ${
+                  timeRemaining < 60 ? 'bg-red-600' : timeRemaining < 120 ? 'bg-yellow-500' : 'bg-green-600'
+                }`}
+                style={{ width: `${getProgressPercentage()}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500">
+              {timeRemaining < 60 ? '⚠️ Expiring soon!' : 'Time remaining'}
+            </p>
+          </div>
+
           <p className="text-sm text-gray-600 mb-2">
             Expires at: <span className="font-semibold">{expiresAt && formatExpiry(expiresAt)}</span>
-          </p>
-          <p className="text-xs text-gray-500 mb-4">
-            This QR code is valid for 5 minutes
           </p>
           <button
             onClick={handleGenerate}

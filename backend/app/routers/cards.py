@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user
-from app.models import User, Balance
+from app.models import User, Balance, AccessLog
 from app.utils import generate_access_token, generate_qr_code_data
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
@@ -65,6 +65,31 @@ def get_balances(
                 "last_updated": b.last_updated.isoformat()
             }
             for b in balances
+        ]
+    }
+
+@router.get("/transaction-history")
+def get_transaction_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = 50
+):
+    """Get transaction history for current user."""
+    logs = db.query(AccessLog).filter(
+        AccessLog.user_id == current_user.id
+    ).order_by(AccessLog.created_at.desc()).limit(limit).all()
+
+    return {
+        "transactions": [
+            {
+                "id": log.id,
+                "service_type": log.service_type,
+                "action": log.action,
+                "success": log.success,
+                "location": log.location,
+                "created_at": log.created_at.isoformat()
+            }
+            for log in logs
         ]
     }
 

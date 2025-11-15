@@ -10,11 +10,15 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
+import os
+from dotenv import load_dotenv
 
-# Security configuration
-SECRET_KEY = "virtual-wiscard-secret-key-change-in-production"
+load_dotenv()
+
+# Security configuration - now from environment variables
+SECRET_KEY = os.getenv("SECRET_KEY", "virtual-wiscard-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", "30"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -69,6 +73,21 @@ def get_current_user(
     user = db.query(User).filter(User.netid == netid).first()
     if user is None:
         raise credentials_exception
+
+    # Check if card is expired
+    if user.expiration_date and user.expiration_date < datetime.utcnow().date():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your WisCard has expired. Please contact administration."
+        )
+
+    # Check if account is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been deactivated. Please contact administration."
+        )
+
     return user
 
 def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:

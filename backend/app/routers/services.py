@@ -3,7 +3,7 @@ Service integration endpoints (dining, library, residence, etc.).
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import datetime
 from app.database import get_db
 from app.auth import get_current_user
@@ -72,6 +72,15 @@ class DiningUseRequest(BaseModel):
     """Request model for using dining balance."""
     amount: float
 
+    @validator('amount')
+    def validate_amount(cls, v):
+        """Validate amount is positive and within limits."""
+        if v <= 0:
+            raise ValueError('Amount must be positive')
+        if v > 100:
+            raise ValueError('Amount exceeds maximum transaction limit of $100')
+        return round(v, 2)  # Round to 2 decimal places
+
 @router.post("/dining/use")
 def use_dining_balance(
     request: DiningUseRequest,
@@ -80,31 +89,38 @@ def use_dining_balance(
 ):
     """Use dining balance (simulate payment)."""
     amount = request.amount
-    balance = db.query(Balance).filter(
-        Balance.user_id == current_user.id,
-        Balance.service_type == "dining"
-    ).first()
-    
-    if not balance:
-        raise HTTPException(status_code=404, detail="Dining balance not found")
-    
-    if balance.balance < amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
-    
-    balance.balance -= amount
-    db.commit()
-    
-    # Log transaction
-    log = AccessLog(
-        user_id=current_user.id,
-        service_type="dining",
-        action=f"payment_{amount}",
-        success=True
-    )
-    db.add(log)
-    db.commit()
-    
-    return {"success": True, "new_balance": balance.balance}
+
+    try:
+        balance = db.query(Balance).filter(
+            Balance.user_id == current_user.id,
+            Balance.service_type == "dining"
+        ).first()
+
+        if not balance:
+            raise HTTPException(status_code=404, detail="Dining balance not found")
+
+        if balance.balance < amount:
+            raise HTTPException(status_code=400, detail="Insufficient balance")
+
+        # Deduct balance and create log in same transaction
+        balance.balance -= amount
+
+        log = AccessLog(
+            user_id=current_user.id,
+            service_type="dining",
+            action=f"payment_{amount}",
+            success=True
+        )
+        db.add(log)
+        db.commit()
+
+        return {"success": True, "new_balance": balance.balance, "amount_charged": amount}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Transaction failed: {str(e)}")
 
 @router.post("/library/checkout")
 def library_checkout(

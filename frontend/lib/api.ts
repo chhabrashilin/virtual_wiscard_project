@@ -123,3 +123,38 @@ export const getStats = async () => {
   return response.data
 }
 
+// Transaction History API
+export const getTransactionHistory = async (limit: number = 50) => {
+  const response = await api.get(`/api/cards/transaction-history?limit=${limit}`)
+  return response.data
+}
+
+// Blockchain API
+export const getBinaryConversion = async () => {
+  const response = await api.post('/api/blockchain/student-id-to-binary')
+  return response.data
+}
+
+export const mintNFT = async (walletAddress: string) => {
+  const response = await api.post('/api/blockchain/mint-nft', { wallet_address: walletAddress })
+  return response.data
+}
+
+export const verifyNFT = async (walletAddress: string) => {
+  const response = await api.get(`/api/blockchain/verify-nft/${walletAddress}`)
+  return response.data
+}
+
+// Apple Wallet API
+export const getAppleWalletData = async (nftTokenId: string | null = null) => {
+  const response = await api.post('/api/wallet/generate-pkpass-data', {
+    nft_token_id: nftTokenId
+  })
+  return response.data
+}
+
+export const getBarcodeData = async () => {
+  const response = await api.get('/api/wallet/barcode-data')
+  return response.data
+}
+
