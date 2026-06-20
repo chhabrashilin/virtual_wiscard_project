@@ -3,9 +3,11 @@ Main FastAPI application entry point.
 """
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from sqlalchemy.orm import Session
-from app.routers import auth, cards, services, admin, blockchain, wallet
-from app.database import get_db
+from app.routers import auth, cards, services, admin, blockchain, wallet, tickets
+from app.database import get_db, engine, Base, ensure_schema
+from app import models  # noqa: F401  (ensures models are registered on Base)
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -36,6 +38,14 @@ app.include_router(services.router)
 app.include_router(admin.router)
 app.include_router(blockchain.router)
 app.include_router(wallet.router)
+app.include_router(tickets.router)
+
+@app.on_event("startup")
+def on_startup():
+    """Create tables on startup so the API works even if init_db.py wasn't run."""
+    Base.metadata.create_all(bind=engine)
+    ensure_schema(engine)
+
 
 @app.get("/")
 def root():
@@ -47,10 +57,15 @@ def root():
         "features": [
             "JWT Authentication",
             "Virtual Student ID Cards",
-            "QR Code Generation",
+            "QR Code Generation + Verifier",
+            "Dining Dollars, Wiscard Cash & Meal Swipes",
+            "Wisc Print",
+            "Permission-based Door/Building Access",
+            "Madison Metro Transit Pass",
+            "Athletic & Event Ticketing",
+            "Lost-card Freeze",
             "Blockchain/NFT Integration",
             "Apple Wallet Pass Generation",
-            "PDF417 Barcode from Binary",
             "Transaction History",
             "Admin Dashboard"
         ]
@@ -61,7 +76,7 @@ def health_check(db: Session = Depends(get_db)):
     """Enhanced health check endpoint."""
     try:
         # Check database connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"

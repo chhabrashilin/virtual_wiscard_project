@@ -16,9 +16,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Security configuration - now from environment variables
-SECRET_KEY = os.getenv("SECRET_KEY", "virtual-wiscard-secret-key-change-in-production")
+DEFAULT_SECRET_KEY = "virtual-wiscard-secret-key-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", "30"))
+
+# Fail fast in production if the secret was never configured. In development we
+# allow the default but warn loudly so it is obvious in the logs.
+if SECRET_KEY == DEFAULT_SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError(
+            "SECRET_KEY must be set in production. Generate one with: "
+            "python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    print(
+        "[WARNING] Using the default development SECRET_KEY. "
+        "Set SECRET_KEY in your environment before deploying."
+    )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -74,8 +89,9 @@ def get_current_user(
     if user is None:
         raise credentials_exception
 
-    # Check if card is expired
-    if user.expiration_date and user.expiration_date < datetime.utcnow().date():
+    # Check if card is expired. expiration_date is a DateTime, so compare against
+    # a datetime (not a date) to avoid a TypeError that would 500 every request.
+    if user.expiration_date and user.expiration_date < datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your WisCard has expired. Please contact administration."

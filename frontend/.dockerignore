@@ -4,5 +4,8 @@ node_modules
 .gitignore
 README.md
 *.log
-.env*.local
+# Never bake secrets or local environment files into the image
+.env
+.env.*
+!.env.example
 

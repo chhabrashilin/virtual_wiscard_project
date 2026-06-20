@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getToken, getCurrentUser } from '@/lib/api'
 import AdminPanel from '@/components/AdminPanel'
+import AdminCampusServices from '@/components/AdminCampusServices'
+import { Toaster } from 'react-hot-toast'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -45,6 +47,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       {/* Header */}
       <header className="bg-uw-red text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -76,8 +79,9 @@ export default function AdminPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <AdminPanel />
+        <AdminCampusServices />
       </main>
     </div>
   )

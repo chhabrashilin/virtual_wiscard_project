@@ -32,7 +32,13 @@ async def generate_apple_wallet_pass_data(
     try:
         # Convert student ID to binary for PDF417 barcode
         student_id = current_user.student_id
-        binary = bin(int(student_id))[2:]
+        try:
+            binary = bin(int(student_id))[2:]
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid student ID format. Must be numeric."
+            )
 
         # Generate pass.json structure
         pass_data = {
@@ -133,6 +139,8 @@ async def generate_apple_wallet_pass_data(
             "note": "Full .pkpass generation requires Apple Developer certificate"
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

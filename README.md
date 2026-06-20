@@ -2,16 +2,31 @@
 
 A full-stack digital student ID system for UW-Madison students that replaces the physical Wiscard with a virtual card accessible through a web application.
 
+### Documentation
+- 📘 **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** — vision, scope, architecture, data model, API surface, roadmap
+- 🔐 **[SECURITY.md](./SECURITY.md)** — security model, safety checks, known limits, production hardening checklist
+- 🤝 **[CONTRIBUTING.md](./CONTRIBUTING.md)** — local setup, running, testing, conventions
+- 📝 **[CHANGELOG.md](./CHANGELOG.md)** — what changed and when
+
 ## Features
 
 - 🪪 **Student Authentication**: Login using UW NetID (simulated with dummy accounts)
-- 💳 **Virtual ID Display**: Shows name, photo, student ID, expiration, and active status
-- 🔐 **Secure QR Code**: Generate temporary QR codes for identity verification and access
-- 🏫 **Service Integration**: 
-  - Dining balance check and management
-  - Residence hall door access (simulated)
+- 💳 **Virtual ID Display**: Shows name, photo, student ID, expiration, active status, and a scannable CODE128 barcode
+- 🔐 **Secure QR Code**: Generate temporary (5-minute) access codes for identity verification
+- 🛂 **Verifier station** (`/verify`): An operator-facing page that scans (camera) or accepts a pasted token and validates it in real time — for dining, Wiscard Cash, transit, **permission-based door access**, and **event-ticket** check-in
+- 🏫 **Service Integration**:
+  - **Dining Dollars** (check + pay) and **meal-plan swipes** (count-based)
+  - Unified **Wiscard Cash** (vending, laundry, bookstore, off-campus)
+  - **Wisc Print** (check + pay)
+  - **Permission-based door/building access** (RecWell, residence halls, labs)
+  - **Madison Metro transit** bus-pass eligibility + tap
   - Library entry and checkout validation
-- ⚙️ **Admin Dashboard**: View active users, manage balances, and revoke cards
+- 🎟️ **Athletic & Event Ticketing**: tickets with single-use QR codes validated at the gate
+- 🧊 **Lost-card Freeze**: students can instantly freeze/unfreeze their card
+- 📊 **Activity History**: Every access/transaction is logged and shown to the student
+- ⚙️ **Admin Dashboard**: Manage users, balances, **access grants, meal plans, transit passes, and tickets**, revoke cards, and see usage analytics
+- 🔗 **Blockchain & Wallet (optional)**: Soulbound NFT metadata prep + Apple Wallet `pass.json` download
+- ✅ **Tested**: pytest API suite + GitHub Actions CI (backend tests, frontend lint/build)
 
 ## Tech Stack
 
@@ -141,16 +156,29 @@ The database is pre-populated with the following test accounts:
 - `GET /api/auth/me` - Get current user information
 
 ### Cards
-- `GET /api/cards/my-card` - Get current user's virtual card
+- `GET /api/cards/my-card` - Get current user's virtual card (balances, meal plan, transit, permissions, frozen state)
 - `POST /api/cards/generate-qr` - Generate temporary QR code
 - `GET /api/cards/balances` - Get all service balances
+- `POST /api/cards/freeze` / `POST /api/cards/unfreeze` - Lost-card freeze toggle
+- `GET /api/cards/transaction-history` - Activity log
 
 ### Services
 - `POST /api/services/access` - Validate access token (for scanning)
 - `POST /api/services/dining/check-balance` - Check dining balance
-- `POST /api/services/dining/use` - Use dining balance
+- `POST /api/services/dining/use` - Pay with dining balance
+- `POST /api/services/print/check-balance` - Check Wisc Print balance
+- `POST /api/services/print/use` - Pay for a print job
+- `POST /api/services/wiscard-cash/check-balance` - Check Wiscard Cash balance
+- `POST /api/services/wiscard-cash/use` - Spend Wiscard Cash at a vendor
+- `GET /api/services/dining/swipes` / `POST /api/services/dining/swipe` - Meal-plan swipes
+- `GET /api/services/transit/pass` - Transit bus-pass status
+- `GET /api/services/access-permissions` - My door/building access
 - `POST /api/services/library/checkout` - Library checkout validation
 - `POST /api/services/residence/access` - Residence hall access
+
+### Tickets
+- `GET /api/tickets` - My event tickets
+- `POST /api/tickets/validate` - Validate a ticket at the gate (single-use)
 
 ### Admin (Admin only)
 - `GET /api/admin/users` - Get all users
@@ -159,14 +187,47 @@ The database is pre-populated with the following test accounts:
 - `POST /api/admin/balances` - Update user balance
 - `GET /api/admin/stats` - Get system statistics
 - `POST /api/admin/revoke-token` - Revoke access token
+- `POST /api/admin/permissions` / `POST /api/admin/permissions/revoke` - Grant/revoke door access
+- `POST /api/admin/meal-swipes` - Set a meal plan
+- `POST /api/admin/transit` - Set transit eligibility
+- `POST /api/admin/tickets` - Issue an event ticket
 
 ## Usage
 
 1. **Login**: Use one of the test accounts to log in
-2. **View Card**: See your virtual Wiscard with all student information
-3. **Generate QR**: Create a temporary QR code for scanning at campus services
-4. **Access Services**: Use the service cards to check balances or access facilities
-5. **Admin Panel**: Admin users can manage users and balances from the admin dashboard
+2. **View Card**: See your virtual Wiscard with all student information and barcode
+3. **Generate QR**: Create a temporary 5-minute access code
+4. **Verify (the core loop)**: On a second device/tab open **`/verify`** (the "Verifier" button in the header), pick a service, then scan the QR with the camera or paste the token. The server validates it and shows the student's verified identity — and the event appears in the student's Activity History.
+5. **Access Services**: Use the service cards to check balances, pay for dining/printing, or access facilities
+6. **Admin Panel**: Admin users can manage users and balances from the admin dashboard
+
+## Testing
+
+Backend API tests (pytest):
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+These cover the full loop: login → generate code → verify, balance spend (incl.
+insufficient/negative guards), transaction history, and admin authorization.
+CI runs them automatically on every push/PR (see `.github/workflows/ci.yml`).
+
+## Security
+
+Highlights (full details in **[SECURITY.md](./SECURITY.md)**):
+
+- JWT auth, bcrypt password hashing, admin-gated routes.
+- Short-lived (5-min), high-entropy, revocable QR access tokens; single-use tickets.
+- `SECRET_KEY` is required in production — the app refuses to start with the default.
+- `.env` is git-ignored and excluded from Docker images.
+- Pydantic validation everywhere; balances can't go negative; transactional spends.
+
+> ⚠️ This is a prototype. Before any real deployment, complete the production
+> hardening checklist in [SECURITY.md](./SECURITY.md) (real SSO, HTTPS, rate
+> limiting, PostgreSQL + migrations, removing demo accounts, security review).
 
 ## Design
 
@@ -188,12 +249,15 @@ The frontend uses Next.js 14 with the App Router. Components are modular and reu
 
 ## Future Enhancements
 
-- Apple Wallet / Google Wallet integration
+See **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** for the full phased roadmap. Highlights still ahead:
+
+- Real UW-Madison SSO/Shibboleth integration
+- Production-signed `.pkpass` + Google Wallet JWT
+- On-chain mint/verify against a deployed testnet contract
+- PostgreSQL + Alembic migrations for production
 - NFC simulation with Web NFC API
-- Analytics dashboard for card usage
-- Real-time notifications
+- Photo upload (currently uses generated avatar placeholders)
 - Multi-factor authentication
-- Photo upload functionality
 
 ## License
 

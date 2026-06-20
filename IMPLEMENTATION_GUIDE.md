@@ -1,5 +1,13 @@
 # Virtual WisCard 2.0 - Implementation Guide
 
+> ⚠️ **Historical document.** This guide reflects an earlier hackathon-era state
+> and may be out of date (e.g. it predates the Verifier, Wiscard Cash, meal
+> swipes, transit, ticketing, and lost-card freeze). For the current source of
+> truth see **[PROJECT_PLAN.md](./PROJECT_PLAN.md)**, **[README.md](./README.md)**,
+> and **[SECURITY.md](./SECURITY.md)**. Note: `jsbarcode` renders CODE128 (not
+> PDF417); the binary/PDF417 encoding lives only in the Apple Wallet pass payload.
+
+
 ## 🚀 New Features Implemented
 
 ### Backend Enhancements

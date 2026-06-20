@@ -55,7 +55,7 @@ def validate_access_token(db: Session, token: str) -> User:
         return None
     
     user = db.query(User).filter(User.id == access_token.user_id).first()
-    if not user or not user.is_active:
+    if not user or not user.is_active or user.is_frozen:
         return None
     
     return user

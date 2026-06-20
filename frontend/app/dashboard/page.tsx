@@ -8,6 +8,10 @@ import QRCodeDisplay from '@/components/QRCodeDisplay'
 import ServiceCard from '@/components/ServiceCard'
 import TransactionHistory from '@/components/TransactionHistory'
 import BlockchainCard from '@/components/BlockchainCard'
+import WiscardCashCard from '@/components/WiscardCashCard'
+import MealSwipesCard from '@/components/MealSwipesCard'
+import CampusAccessCard from '@/components/CampusAccessCard'
+import TicketsCard from '@/components/TicketsCard'
 import { Toaster } from 'react-hot-toast'
 
 export default function DashboardPage() {
@@ -63,6 +67,12 @@ export default function DashboardPage() {
               <p className="text-sm opacity-90">Welcome, {user?.full_name}</p>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push('/verify')}
+                className="bg-white/10 px-4 py-2 rounded-lg font-semibold hover:bg-white/20 transition-colors"
+              >
+                Verifier
+              </button>
               {user?.is_admin && (
                 <button
                   onClick={() => router.push('/admin')}
@@ -90,6 +100,18 @@ export default function DashboardPage() {
           <QRCodeDisplay />
         </div>
 
+        {/* Wallet & Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+          <WiscardCashCard />
+          <MealSwipesCard />
+          <CampusAccessCard />
+        </div>
+
+        {/* Tickets */}
+        <div className="mb-8">
+          <TicketsCard />
+        </div>
+
         {/* Blockchain & Apple Wallet */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <BlockchainCard />
@@ -99,12 +121,18 @@ export default function DashboardPage() {
         {/* Services */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Campus Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ServiceCard
               title="Dining Halls"
-              description="Check your dining balance and access meal services"
+              description="Check your dining balance and pay for meals"
               icon="🍽️"
               serviceType="dining"
+            />
+            <ServiceCard
+              title="Wisc Print"
+              description="Check your printing balance and pay for print jobs"
+              icon="🖨️"
+              serviceType="print"
             />
             <ServiceCard
               title="Libraries"

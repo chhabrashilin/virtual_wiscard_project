@@ -76,6 +76,28 @@ export const getBalances = async () => {
   return response.data
 }
 
+// Verifier API (operator-facing; validates a scanned/entered access token)
+export const verifyAccessToken = async (
+  token: string,
+  serviceType: string,
+  action: string = 'entry',
+  resource: string | null = null
+) => {
+  const response = await axios.post(`${API_BASE_URL}/api/services/access`, {
+    token,
+    service_type: serviceType,
+    action,
+    resource,
+  })
+  return response.data
+}
+
+// Validate an event ticket at the gate (public scanner endpoint)
+export const validateTicket = async (code: string) => {
+  const response = await axios.post(`${API_BASE_URL}/api/tickets/validate`, { code })
+  return response.data
+}
+
 // Services API
 export const checkDiningBalance = async () => {
   const response = await api.post('/api/services/dining/check-balance')
@@ -94,6 +116,112 @@ export const libraryCheckout = async () => {
 
 export const residenceAccess = async () => {
   const response = await api.post('/api/services/residence/access')
+  return response.data
+}
+
+export const checkPrintBalance = async () => {
+  const response = await api.post('/api/services/print/check-balance')
+  return response.data
+}
+
+export const usePrintBalance = async (amount: number) => {
+  const response = await api.post('/api/services/print/use', { amount })
+  return response.data
+}
+
+export const checkWiscardCash = async () => {
+  const response = await api.post('/api/services/wiscard-cash/check-balance')
+  return response.data
+}
+
+export const useWiscardCash = async (amount: number, vendor: string) => {
+  const response = await api.post('/api/services/wiscard-cash/use', { amount, vendor })
+  return response.data
+}
+
+export const getMealSwipes = async () => {
+  const response = await api.get('/api/services/dining/swipes')
+  return response.data
+}
+
+export const useMealSwipe = async () => {
+  const response = await api.post('/api/services/dining/swipe')
+  return response.data
+}
+
+export const getTransitPass = async () => {
+  const response = await api.get('/api/services/transit/pass')
+  return response.data
+}
+
+export const getMyPermissions = async () => {
+  const response = await api.get('/api/services/access-permissions')
+  return response.data
+}
+
+// Card lifecycle (lost-card freeze)
+export const freezeCard = async () => {
+  const response = await api.post('/api/cards/freeze')
+  return response.data
+}
+
+export const unfreezeCard = async () => {
+  const response = await api.post('/api/cards/unfreeze')
+  return response.data
+}
+
+// Tickets
+export const getMyTickets = async () => {
+  const response = await api.get('/api/tickets')
+  return response.data
+}
+
+// Admin: expanded management
+export const grantPermission = async (data: {
+  user_id: number
+  resource_key: string
+  resource_name: string
+}) => {
+  const response = await api.post('/api/admin/permissions', data)
+  return response.data
+}
+
+export const revokePermission = async (data: {
+  user_id: number
+  resource_key: string
+  resource_name: string
+}) => {
+  const response = await api.post('/api/admin/permissions/revoke', data)
+  return response.data
+}
+
+export const setMealSwipes = async (data: {
+  user_id: number
+  plan_name: string
+  swipes_remaining: number
+}) => {
+  const response = await api.post('/api/admin/meal-swipes', data)
+  return response.data
+}
+
+export const setTransitPass = async (data: {
+  user_id: number
+  status: string
+  semester?: string
+  valid_until?: string | null
+}) => {
+  const response = await api.post('/api/admin/transit', data)
+  return response.data
+}
+
+export const issueTicket = async (data: {
+  user_id: number
+  event_name: string
+  event_date?: string | null
+  venue?: string
+  seat?: string | null
+}) => {
+  const response = await api.post('/api/admin/tickets', data)
   return response.data
 }
 

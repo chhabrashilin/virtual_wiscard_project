@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getMyCard } from '@/lib/api'
+import toast from 'react-hot-toast'
+import { getMyCard, freezeCard, unfreezeCard } from '@/lib/api'
+import Barcode from './Barcode'
 
 interface CardData {
   full_name: string
@@ -10,6 +12,7 @@ interface CardData {
   email: string
   photo_url: string
   is_active: boolean
+  is_frozen: boolean
   expiration_date: string
   balances: Record<string, number>
 }
@@ -17,6 +20,7 @@ interface CardData {
 export default function VirtualCard() {
   const [cardData, setCardData] = useState<CardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     loadCard()
@@ -30,6 +34,25 @@ export default function VirtualCard() {
       console.error('Failed to load card:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const toggleFreeze = async () => {
+    if (!cardData) return
+    setBusy(true)
+    try {
+      if (cardData.is_frozen) {
+        await unfreezeCard()
+        toast.success('Card unfrozen — you can use it again.')
+      } else {
+        await freezeCard()
+        toast.success('Card frozen. No scans will work until you unfreeze it.')
+      }
+      await loadCard()
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Action failed')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -64,9 +87,13 @@ export default function VirtualCard() {
           </div>
           <div className="text-right">
             <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              cardData.is_active ? 'bg-green-500' : 'bg-red-500'
+              cardData.is_frozen
+                ? 'bg-blue-400'
+                : cardData.is_active
+                ? 'bg-green-500'
+                : 'bg-red-500'
             }`}>
-              {cardData.is_active ? 'ACTIVE' : 'INACTIVE'}
+              {cardData.is_frozen ? 'FROZEN' : cardData.is_active ? 'ACTIVE' : 'INACTIVE'}
             </div>
           </div>
         </div>
@@ -114,6 +141,36 @@ export default function VirtualCard() {
             </div>
           </div>
         )}
+
+        {/* Scannable barcode */}
+        <div className="border-t pt-4 mt-4 flex flex-col items-center">
+          <Barcode value={cardData.student_id} />
+          <p className="text-xs text-gray-400 mt-1">Present at any campus reader</p>
+        </div>
+
+        {/* Lost-card freeze */}
+        <div className="border-t pt-4 mt-4">
+          {cardData.is_frozen && (
+            <p className="text-xs text-blue-700 bg-blue-50 rounded-lg p-2 mb-3">
+              🔒 Your card is frozen. Access codes and scans are disabled until you unfreeze it.
+            </p>
+          )}
+          <button
+            onClick={toggleFreeze}
+            disabled={busy}
+            className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+              cardData.is_frozen
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {busy
+              ? 'Working…'
+              : cardData.is_frozen
+              ? 'Unfreeze Card'
+              : '🔒 Freeze Card (lost / stolen)'}
+          </button>
+        </div>
       </div>
     </div>
   )

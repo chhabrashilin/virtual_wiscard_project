@@ -8,6 +8,8 @@ env/
 venv/
 ENV/
 .venv
+.pytest_cache/
+backend/data/
 *.db
 *.sqlite
 *.sqlite3

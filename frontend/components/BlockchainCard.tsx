@@ -11,11 +11,18 @@ interface BinaryData {
   barcode_type: string
 }
 
+interface ResultPanel {
+  title: string
+  rows: { label: string; value: string }[]
+  note?: string
+}
+
 export default function BlockchainCard() {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [connected, setConnected] = useState(false)
   const [loading, setLoading] = useState(false)
   const [binaryData, setBinaryData] = useState<BinaryData | null>(null)
+  const [result, setResult] = useState<ResultPanel | null>(null)
 
   const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
@@ -53,12 +60,20 @@ export default function BlockchainCard() {
 
     try {
       setLoading(true)
-      const result = await mintNFT(walletAddress)
-      toast.success('NFT metadata prepared! Now mint on blockchain')
-
-      // Display metadata
-      console.log('NFT Metadata:', result.metadata)
-      alert(`NFT Ready to Mint!\n\nStudent ID: ${result.metadata.student_id}\nBinary: ${result.metadata.binary_representation}\n\nNext: Use MetaMask to mint the NFT on-chain`)
+      const res = await mintNFT(walletAddress)
+      toast.success('NFT metadata prepared!')
+      setResult({
+        title: '🎨 Soulbound NFT — Ready to Mint',
+        rows: [
+          { label: 'Student', value: res.metadata.student_name },
+          { label: 'Student ID', value: res.metadata.student_id },
+          { label: 'Binary', value: res.metadata.binary_representation },
+          { label: 'Network', value: res.metadata.network },
+          { label: 'Type', value: res.metadata.token_type },
+          { label: 'Wallet', value: res.metadata.wallet_address },
+        ],
+        note: 'Next: confirm the transaction in MetaMask to mint on-chain.',
+      })
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to prepare NFT')
     } finally {
@@ -72,9 +87,29 @@ export default function BlockchainCard() {
       const passData = await getAppleWalletData()
       toast.success('Apple Wallet pass data generated!')
 
-      // Display pass data
-      console.log('Apple Wallet Pass Data:', passData.pass_data)
-      alert(`Apple Wallet Pass Ready!\n\nBinary Code: ${passData.binary_code}\nStudent ID: ${passData.student_id}\n\nNote: Full .pkpass file requires Apple Developer certificate`)
+      // Offer the pass.json for download so it can be packaged into a .pkpass
+      const blob = new Blob([JSON.stringify(passData.pass_data, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `wiscard-pass-${passData.student_id}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      setResult({
+        title: '🍎 Apple Wallet Pass',
+        rows: [
+          { label: 'Student ID', value: passData.student_id },
+          { label: 'Binary code', value: passData.binary_code },
+          { label: 'Barcode', value: 'PDF417 (binary-encoded)' },
+          { label: 'Downloaded', value: `wiscard-pass-${passData.student_id}.json` },
+        ],
+        note: 'pass.json downloaded. Full .pkpass packaging requires an Apple Developer certificate.',
+      })
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to generate Apple Wallet pass')
     } finally {
@@ -135,6 +170,34 @@ export default function BlockchainCard() {
               {loading ? 'Generating...' : '🍎 Generate Apple Wallet Pass'}
             </button>
           </div>
+
+          {result && (
+            <div className="bg-white text-gray-800 rounded-lg p-4 shadow-lg">
+              <div className="flex items-start justify-between mb-3">
+                <p className="font-bold text-sm">{result.title}</p>
+                <button
+                  onClick={() => setResult(null)}
+                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  aria-label="Dismiss"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="space-y-2">
+                {result.rows.map((row) => (
+                  <div key={row.label} className="text-xs">
+                    <span className="text-gray-500">{row.label}</span>
+                    <p className="font-mono break-all text-gray-900">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+              {result.note && (
+                <p className="text-xs text-purple-700 mt-3 border-t pt-2">
+                  {result.note}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="bg-white/10 rounded-lg p-4 backdrop-blur text-xs space-y-2">
             <p className="font-semibold">✨ Features:</p>

@@ -1,5 +1,11 @@
 # 🎉 Virtual WisCard 2.0 - HACKATHON READY!
 
+> ⚠️ **Historical document** kept for context. It predates several capabilities
+> (Verifier, Wiscard Cash, meal swipes, transit, ticketing, lost-card freeze) and
+> some claims are aspirational. Current docs: **[PROJECT_PLAN.md](./PROJECT_PLAN.md)**,
+> **[README.md](./README.md)**, **[SECURITY.md](./SECURITY.md)**, **[CHANGELOG.md](./CHANGELOG.md)**.
+
+
 ## ✅ ALL Features Implemented Successfully
 
 ### 🔒 Security Enhancements
